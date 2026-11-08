@@ -29,6 +29,7 @@ import cx_vault
 import cx_keyring
 import cx_guard
 import cx_eula
+import cx_update
 
 APP_TITLE = "Deadline · 未完成作业 / 考试提取"
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -490,6 +491,12 @@ class App:
         footer.pack(side="bottom", fill="x")
         tk.Label(footer, text="仅做读取，不会提交 / 删除 / 作答任何作业或考试",
                  bg=BG, fg=SUB, font=("Microsoft YaHei UI", 9), anchor="w").pack(side="left")
+        # 右下角：版本号；发现新版时这条自己变成「发现新版本 → 点击下载」
+        self._update_url = None
+        self.lbl_ver = tk.Label(footer, text="v%s" % cx_update.VERSION, bg=BG, fg=SUB,
+                                font=("Microsoft YaHei UI", 9), anchor="e")
+        self.lbl_ver.pack(side="right")
+        self.lbl_ver.bind("<Button-1>", self._open_update_page)
         # ---------------- 可滚动页面
         self.page = ScrollArea(root, BG)
         self.page.pack(fill="both", expand=True)
@@ -601,7 +608,7 @@ class App:
         ph_icon = self._img("cookie_big.png")
         if ph_icon:
             tk.Label(holder, image=ph_icon, bg=BG).pack()
-        tk.Label(holder, text="登录后这里按「未完成 / 超时未交 / 已完成」列出作业与考试", bg=BG,
+        tk.Label(holder, text="登录后这里按「未完成 / 超时未交 / 待批改」列出作业与考试", bg=BG,
                  fg="#9aa5b1", font=("Microsoft YaHei UI", 10)).pack(pady=(s(6), 0))
         tk.Label(holder, text="只读取，不会做任何提交或修改", bg=BG, fg="#b3bcc7",
                  font=("Microsoft YaHei UI", 9)).pack(pady=(s(2), 0))
@@ -669,6 +676,32 @@ class App:
         self.root.bind("<Configure>", self._on_resize)
         self.root.bind_all("<MouseWheel>", self._on_wheel)
         self._resize_job = None
+
+        # 首屏画完再问更新，别和界面抢网络
+        self.root.after(1200, self._check_update_async)
+
+    # ------------------------------------------------------------ 自动更新
+    def _check_update_async(self):
+        """每次运行问一次最新版；断网、限流、接口变了都静默跳过。"""
+        def work():
+            info = cx_update.check()
+            if info:
+                self.root.after(0, lambda i=info: self._on_update_found(i))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_update_found(self, info):
+        self._update_url = info.get("url") or cx_update.PAGE
+        self.lbl_ver.configure(
+            text="发现新版本 %s · 点击下载" % info.get("version", ""),
+            fg=ACCENT, cursor="hand2",
+            font=("Microsoft YaHei UI", 9, "underline"))
+
+    def _open_update_page(self, _=None):
+        try:
+            webbrowser.open(self._update_url or cx_update.PAGE)
+        except Exception:
+            pass
 
     # ------------------------------------------------------------ 自适应
     def _on_resize(self, event=None):
@@ -944,7 +977,7 @@ class App:
             ok, msg = client.check_login()
             if not ok:
                 raise cx.ChaoxingError(msg)
-            # 三块（未完成 / 超时未交 / 已完成）都要，交给界面分块筛选
+            # 三块（未完成 / 超时未交 / 待批改）都要，交给界面分块筛选
             data = client.extract_all(only_incomplete=False)
             data["warnings"] = warnings
             self.data = data
@@ -1006,7 +1039,7 @@ class App:
                 show = "超时未交"
                 tag = "overdue"
             elif st == cx.STATE_DONE:
-                show = status or "已完成"
+                show = status or "待批改"
                 tag = "done"
             else:
                 show = status or "未完成"
@@ -1064,7 +1097,7 @@ class App:
         tasks = data.get("tasks") or []
         counts = self._counts()
         self.lbl_stats.configure(
-            text="扫描 %d 门课程 · 未完成 %d · 超时未交 %d · 已完成 %d"
+            text="扫描 %d 门课程 · 未完成 %d · 超时未交 %d · 待批改 %d"
                  % (data.get("courses_count", 0), counts[cx.STATE_OPEN],
                     counts[cx.STATE_OVERDUE], counts[cx.STATE_DONE]))
         self._fill_tree()
@@ -1072,11 +1105,14 @@ class App:
 
         msgs = []
         if tasks:
-            msgs.append("提取完成：共 %d 条（未完成 %d · 超时未交 %d · 已完成 %d）。"
+            msgs.append("提取完成：共 %d 条（未完成 %d · 超时未交 %d · 待批改 %d）。"
                         % (len(tasks), counts[cx.STATE_OPEN],
                            counts[cx.STATE_OVERDUE], counts[cx.STATE_DONE]))
         else:
             msgs.append("提取完成：没有找到作业或考试。")
+        hidden = data.get("hidden_stale") or 0
+        if hidden:
+            msgs.append("另有 %d 条超期一个月以上未提交的，已不再显示。" % hidden)
         if data.get("hint"):
             msgs.append(data["hint"])
         if data.get("warnings"):

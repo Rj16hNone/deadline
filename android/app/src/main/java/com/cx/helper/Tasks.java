@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-/** 数据模型与三块归属（未完成 / 超时未交 / 已完成）。 */
+/** 数据模型与三块归属（未完成 / 超时未交 / 待批改）。 */
 final class Tasks {
     private Tasks() {
     }
@@ -14,12 +14,15 @@ final class Tasks {
     static final String DONE = "done";
     static final String[] ORDER = {OPEN, OVERDUE, DONE};
 
+    /** 到期超过这么多天还没交的，不再显示（免得陈年旧账一直挂着）。 */
+    static final long STALE_MS = 30L * 24 * 60 * 60 * 1000;
+
     static String label(String s) {
         if (OVERDUE.equals(s)) {
             return "超时未交";
         }
         if (DONE.equals(s)) {
-            return "已完成";
+            return "待批改";
         }
         return "未完成";
     }
@@ -34,7 +37,7 @@ final class Tasks {
     }
 
     /**
-     * done    已完成（作业已交 / 考试已交卷）
+     * done    待批改（作业已交 / 考试已交卷，等老师批）
      * overdue 未完成且截止时间已过
      * open    未完成但还没到期；拿不到时间的也算这里（宁可当作待办）
      */
@@ -51,6 +54,18 @@ final class Tasks {
             return OVERDUE;
         }
         return OPEN;
+    }
+
+    /**
+     * 到期超过一个月、仍没提交的算陈年旧账，不展示。
+     * 只对「超时未交」生效：已交的（待批改）不管多旧都留着；拿不到时间的也留着。
+     */
+    static boolean stale(T t, long now) {
+        if (!OVERDUE.equals(t.state)) {
+            return false;
+        }
+        Date end = Parse.fromIso(t.deadlineIso);
+        return end != null && now - end.getTime() >= STALE_MS;
     }
 
     static String nz(String s) {
@@ -102,6 +117,7 @@ final class Tasks {
         final List<String> errors = new ArrayList<>();
         int courses;
         int[] counts = new int[3];
+        int hidden;   // 超期一个月以上、被隐掉的条数
         String hint = "";
 
         int count(String state) {

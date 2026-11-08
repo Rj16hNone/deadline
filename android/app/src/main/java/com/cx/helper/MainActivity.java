@@ -116,6 +116,82 @@ public class MainActivity extends Activity {
             autoExtract();
         }
         syncButton();
+        checkUpdate();
+    }
+
+    // ------------------------------------------------------------------ 检查更新
+    /** 每次打开问一次最新版本；网络不通就安静跳过，不打扰。 */
+    private void checkUpdate() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String[] rel = Api.latestRelease();
+                if (rel == null || !newer(rel[0], ownVersion())) {
+                    return;
+                }
+                ui.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        askUpdate(rel[0].replaceAll("^[Vv]", ""), rel[1]);
+                    }
+                });
+            }
+        }, "update-check").start();
+    }
+
+    private void askUpdate(String ver, final String page) {
+        if (isFinishing()) {
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("发现新版本 " + ver)
+                .setMessage("当前版本 " + ownVersion() + "，可以去发行版页面下载新的安装包。")
+                .setPositiveButton("去下载", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        try {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(page)));
+                        } catch (Exception ignored) {
+                            // 没有浏览器就算了
+                        }
+                    }
+                })
+                .setNegativeButton("以后再说", null)
+                .show();
+    }
+
+    private String ownVersion() {
+        try {
+            String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            return v == null ? "" : v;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private static int[] nums(String s) {
+        String clean = (s == null ? "" : s).replaceAll("[^0-9.]", "");
+        int[] out = new int[3];
+        String[] parts = clean.split("\\.");
+        for (int i = 0; i < 3 && i < parts.length; i++) {
+            try {
+                out[i] = Integer.parseInt(parts[i]);
+            } catch (Exception e) {
+                out[i] = 0;
+            }
+        }
+        return out;
+    }
+
+    private static boolean newer(String latest, String mine) {
+        int[] a = nums(latest);
+        int[] b = nums(mine);
+        for (int i = 0; i < 3; i++) {
+            if (a[i] != b[i]) {
+                return a[i] > b[i];
+            }
+        }
+        return false;
     }
 
     private void autoExtract() {
@@ -426,8 +502,11 @@ public class MainActivity extends Activity {
                 StringBuilder sb = new StringBuilder();
                 sb.append("扫描 ").append(r.courses).append(" 门课程 · 未完成 ")
                         .append(r.count(Tasks.OPEN)).append(" · 超时未交 ")
-                        .append(r.count(Tasks.OVERDUE)).append(" · 已完成 ")
+                        .append(r.count(Tasks.OVERDUE)).append(" · 待批改 ")
                         .append(r.count(Tasks.DONE));
+                if (r.hidden > 0) {
+                    sb.append(" · 另有 ").append(r.hidden).append(" 条超期一月以上已隐藏");
+                }
                 tvStats.setText(sb.toString());
                 tvExport.setVisibility(all.isEmpty() ? View.GONE : View.VISIBLE);
 
@@ -471,7 +550,7 @@ public class MainActivity extends Activity {
         }
         listBox.removeAllViews();
         if (shown.isEmpty()) {
-            TextView empty = tv(all.isEmpty() ? "登录后这里按「未完成 / 超时未交 / 已完成」列出作业与考试"
+            TextView empty = tv(all.isEmpty() ? "登录后这里按「未完成 / 超时未交 / 待批改」列出作业与考试"
                     : "当前筛选下没有条目", 12, SUB, false);
             empty.setGravity(Gravity.CENTER);
             empty.setPadding(0, dp(28), 0, dp(28));

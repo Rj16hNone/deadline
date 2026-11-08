@@ -20,8 +20,14 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+try:
+    import cx_update
+
+    APP_VER = cx_update.VERSION
+except Exception:  # 单独跑本文件时（没带 cx_update）也不至于崩
+    APP_VER = "1.0.0"
+
 APP_NAME = "Deadline"
-APP_VER = "1.0.0"
 PUBLISHER = "Deadline"
 REG_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Deadline"
 EXE_NAME = APP_NAME + ".exe"
@@ -228,7 +234,7 @@ class Setup(tk.Tk):
                  font=("Microsoft YaHei UI", 14, "bold")).pack(anchor="w", padx=24, pady=(24, 8))
         txt = (
             "本程序会把学习通里「还没做的作业、还没考的试」一次性列出来，\n"
-            "按「未完成 / 超时未交 / 已完成」分块显示，可导出 CSV 或日历。\n\n"
+            "按「未完成 / 超时未交 / 待批改」分块显示，可导出 CSV 或日历。\n\n"
             "它只做读取：不会提交作业、不会答题、不会改动任何数据。\n\n"
             "安装程序会把程序装到下面的位置，并创建开始菜单快捷方式（可选桌面快捷方式），"
             "卸载时可在「设置 → 应用」里直接卸掉。\n\n"

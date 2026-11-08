@@ -275,18 +275,21 @@ def _from_iso(text):
 
 
 # ---------------------------------------------------------------- 三块分类
-# 作业列表按「未完成 / 超时未交 / 已完成」分三块；顺序即表格里的显示顺序（紧急的在前）。
+# 作业列表按「未完成 / 超时未交 / 待批改」分三块；顺序即表格里的显示顺序（紧急的在前）。
 STATE_OPEN = "open"
 STATE_OVERDUE = "overdue"
 STATE_DONE = "done"
 STATE_ORDER = (STATE_OPEN, STATE_OVERDUE, STATE_DONE)
-STATE_LABEL = {STATE_OPEN: "未完成", STATE_OVERDUE: "超时未交", STATE_DONE: "已完成"}
+STATE_LABEL = {STATE_OPEN: "未完成", STATE_OVERDUE: "超时未交", STATE_DONE: "待批改"}
+
+# 到期超过这么多天还没提交的，不再显示（免得陈年旧账一直挂在列表里）
+STALE_DAYS = 30
 
 
 def task_state(t, now=None):
     """把一个任务归到三块之一。
 
-    done    已完成（作业已交 / 考试已交卷）
+    done    待批改（作业已交 / 考试已交卷，等老师批）
     overdue 未完成，且截止时间已经过去
     open    未完成，还没到期；拿不到时间的也归这里（宁可当作待办）
     """
@@ -301,6 +304,21 @@ def task_state(t, now=None):
     if "已结束" in st:
         return STATE_OVERDUE
     return STATE_OPEN
+
+
+def is_stale(t, now=None):
+    """到期超过 STALE_DAYS 天、仍没提交的，视为陈年旧账，不显示。
+
+    只对「超时未交」生效：已交的（待批改）不管多旧都留着，那是等批改的记录。
+    拿不到截止时间的超时项无法判断新旧，一律保留。
+    """
+    now = now or datetime.datetime.now()
+    if t.get("state") != STATE_OVERDUE:
+        return False
+    end = _from_iso(t.get("deadline_iso"))
+    if end is None:
+        return False
+    return (now - end).days >= STALE_DAYS
 
 
 class ChaoxingClient:
@@ -1048,13 +1066,22 @@ class ChaoxingClient:
         except ChaoxingError as e:
             result["errors"].append(f"考试列表获取失败：{e}")
 
-        # 打上「三块」归属并按块排序：未完成（最紧急）→ 超时未交 → 已完成
+        # 打上「三块」归属并按块排序：未完成（最紧急）→ 超时未交 → 待批改
         now = datetime.datetime.now()
         counts = {k: 0 for k in STATE_ORDER}
+        kept = []
+        hidden = 0
         for t in result["tasks"]:
             t["state"] = task_state(t, now)
+            if is_stale(t, now):
+                # 到期一个多月还没交的，不再摆出来（只隐藏「超时未交」这一块）
+                hidden += 1
+                continue
+            kept.append(t)
             counts[t["state"]] = counts.get(t["state"], 0) + 1
+        result["tasks"] = kept
         result["counts"] = counts
+        result["hidden_stale"] = hidden
 
         def sort_key(t):
             iso = t.get("deadline_iso") or ""
@@ -1075,7 +1102,7 @@ def main():
     ap.add_argument("--cookies", help="浏览器复制的 Cookie 字符串")
     ap.add_argument("--cookies-file", help="存放 Cookie 的文件路径（支持 JSON）")
     ap.add_argument("--output", help="导出 CSV 路径（默认 stdout）")
-    ap.add_argument("--all", action="store_true", help="包含已完成的任务")
+    ap.add_argument("--all", action="store_true", help="包含已提交（待批改）的任务")
     ap.add_argument("--diag-courses", action="store_true",
                     help="只列出各入口抓到的课程（排查「某门课不显示」时用）")
     args = ap.parse_args()

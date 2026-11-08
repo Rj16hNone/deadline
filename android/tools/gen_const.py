@@ -37,6 +37,9 @@ ITEMS = [
     ("REFER_ENC", "http%3A%2F%2Fi.chaoxing.com"),
     ("MOOC_ANS", "mooc-ans"),
     # 内置网页视图需要预置 Cookie 的域名（逗号分隔，运行时 split）
+    # 自动更新：问 Gitee 的最新发行版（仓库改名后要一起改这里）
+    ("REL_API", "https://gitee.com/api/v5/repos/rj16h_none/chaoxing-homework-extractor/releases/latest"),
+    ("REL_PAGE", "https://gitee.com/rj16h_none/chaoxing-homework-extractor/releases"),
     ("CK_HOSTS", "chaoxing.com,www.chaoxing.com,i.chaoxing.com,i.mooc.chaoxing.com,"
                  "mooc.chaoxing.com,mooc1.chaoxing.com,mooc1-1.chaoxing.com,"
                  "mooc1-2.chaoxing.com,mooc2.chaoxing.com,mooc2-ans.chaoxing.com,"

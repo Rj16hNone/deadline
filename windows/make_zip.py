@@ -34,6 +34,7 @@ FILES = [
     "cx_guard.py",
     "cx_keyring.py",
     "cx_login.py",
+    "cx_update.py",
     "cx_vault.py",
 ]
 ASSET_DIR = "assets"

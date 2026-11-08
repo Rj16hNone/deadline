@@ -49,7 +49,7 @@ echo [4/4] 打包安装程序...
 ".build-venv\bin\python.exe" -m PyInstaller --noconfirm --clean --onefile --noconsole ^
   --name "Windows-Setup" --icon "assets\app.ico" ^
   --add-data "Deadline.exe;payload" --add-data "README.md;payload" --add-data "LICENSE;payload" ^
-  --hidden-import cx_eula --distpath dist-setup --workpath build-setup installer.py
+  --hidden-import cx_eula --hidden-import cx_update --distpath dist-setup --workpath build-setup installer.py
 if errorlevel 1 (
   echo [错误] 安装程序打包失败
   pause

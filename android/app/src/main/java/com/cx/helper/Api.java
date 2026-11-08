@@ -1098,8 +1098,14 @@ final class Api {
         }
 
         long now = System.currentTimeMillis();
-        for (Tasks.T t : res.tasks) {
+        for (java.util.Iterator<Tasks.T> it = res.tasks.iterator(); it.hasNext(); ) {
+            Tasks.T t = it.next();
             t.state = Tasks.state(t, now);
+            if (Tasks.stale(t, now)) {
+                it.remove();
+                res.hidden++;
+                continue;
+            }
             res.counts[Tasks.rank(t.state)]++;
         }
         Collections.sort(res.tasks, new Comparator<Tasks.T>() {
@@ -1119,6 +1125,33 @@ final class Api {
             }
         });
         return res;
+    }
+
+    // ---------------------------------------------------------------- 检查更新
+    /** 问 Gitee 最新发行版；返回 {tag_name, 发行页} 或 null（断网/限流一律当没有更新）。 */
+    static String[] latestRelease() {
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL(C.REL_API).openConnection();
+            c.setConnectTimeout(6000);
+            c.setReadTimeout(6000);
+            c.setRequestProperty("User-Agent", C.UA);
+            if (c.getResponseCode() != 200) {
+                return null;
+            }
+            String body = new String(readAll(c.getInputStream()), "UTF-8");
+            String tag = new JSONObject(body).optString("tag_name", "");
+            if (tag.isEmpty()) {
+                return null;
+            }
+            return new String[]{tag, C.REL_PAGE};
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (c != null) {
+                c.disconnect();
+            }
+        }
     }
 
     private static void sleep(long ms) {
