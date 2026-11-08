@@ -32,7 +32,7 @@ final class C {
     static final String MOOC1_HOST = Str.d("EezDpoYuHH0c/8Ct3CJIIgjn36+LYw0hDu0=", 121);
     static final String REFER_ENC = Str.d("ZF8+Ga2Uh8A2ZWdTxvaQvpR6VSER+dH7l3xf", 12);
     static final String MOOC_ANS = Str.d("clEyH7bbt4s=", 31);
-    static final String REL_API = Str.d("WiUE/933wyRNIBziw+uHbE9uAQ/3kqrONUs9B/nG+4F4AGYH0cOjhW8GKw/nyryKbEZtNxHw2ayVa1N6E+3AoZNyRCAcot6uhmxJNAP2i6+DdUVMKg==", 50);
-    static final String REL_PAGE = Str.d("LRD30rLa0DFaNQ//3PaUeVh7AfiA5odRQyMF74arj2dKPArsxu23kXBZLBXr0/qTbUAhE/LEoJwiXi4G7Mm0g3Y=", 69);
+    static final String REL_API = Str.d("WiUE/933wyRNIBziw+uHbE9uAQ/3kqrONUs9B/nG+4F4AGYH0cOjhW8GLALnwaiKbERvLRvx2bqJfEt4GvTAtoFl", 50);
+    static final String REL_PAGE = Str.d("LRD30rLa0DFaNQ//3PaUeVh7AfiA5odRQyMF74asgmdBKArsxO+tm3FZOgn8yw==", 69);
     static final String CK_HOSTS = Str.d("Ox/32qyafFZ+DOHA4Jx9XmYE7sSrm2tPJ3Ed8tH3kzdbPxf6zLqcdh4sAeCAosRkRygFq8erg25YVjAasti1lDRaORr3nbGZcUA2BOLM5IpnSmoI68yh0C58VjwT49O3nzlVOhm/376fbB9gXaXJoYloXiwK5Iyij5IyUDMU+Yj1xThWPBL9ybmBaQMvBOeFpYhpRnZN4cmhsIZ0UjxU+te62nhbPBGjna6AfgIoAujHv49rQ20B7s2Ts5JzWHcY9sT4lnxSPQn5wanDb0QnReXIqYY1DiMR6bHdtZ10QjAW8Ji2m34eIRH83b2DeV57RuTOpIt7Sy8HUf3SsddpSjdZ9d21nGpYPgigzqOG", 88);
 }

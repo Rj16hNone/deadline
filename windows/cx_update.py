@@ -12,7 +12,7 @@ import urllib.request
 VERSION = "1.1.0"
 
 OWNER = "rj16h_none"
-REPO = "chaoxing-homework-extractor"
+REPO = "deadline"
 API = "https://gitee.com/api/v5/repos/%s/%s/releases/latest" % (OWNER, REPO)
 PAGE = "https://gitee.com/%s/%s/releases" % (OWNER, REPO)
 
